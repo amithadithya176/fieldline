@@ -1,7 +1,8 @@
 FROM node:24-bookworm-slim AS frontend
 WORKDIR /src/Client
 COPY Client/package.json Client/package-lock.json ./
-RUN npm ci --no-audit --no-fund
+RUN npm install --global npm@11.6.2 --no-audit --no-fund \
+    && npm ci --no-audit --no-fund
 COPY Client/ ./
 RUN npm run build
 
