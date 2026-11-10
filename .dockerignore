@@ -1,0 +1,11 @@
+.git
+.github
+**/node_modules
+**/.angular
+**/bin
+**/obj
+Server/wwwroot
+Server/App_Data
+.env
+.env.*
+**/*.user

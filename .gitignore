@@ -1,0 +1,10 @@
+Client/node_modules/
+Client/.angular/
+Server/bin/
+Server/obj/
+Server/wwwroot/
+Server/App_Data/
+.env
+.env.*
+*.user
+/Run-Fieldline.cmd

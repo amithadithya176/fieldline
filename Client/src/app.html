@@ -1,0 +1,158 @@
+<div class="layout">
+  <aside class="sidebar" id="sidebar" [class.open]="navOpen()">
+    <a class="brand" href="#overview" (click)="navOpen.set(false)"><span class="brand-mark"><app-icon name="sprout"/></span><span>fieldline<span class="brand-period">.</span><small>EQUIPMENT OPERATIONS</small></span></a>
+    <div class="workspace"><span class="workspace-icon"><app-icon name="building"/></span><div><strong>Prairie Equipment</strong><small>Operations workspace</small></div></div>
+    <div class="nav-label">WORKSPACE</div>
+    <nav aria-label="Main navigation">
+      @for (route of routes; track route.id) {
+        <a class="nav-link" [class.active]="page()===route.id" [attr.aria-current]="page()===route.id?'page':null" [href]="'#'+route.id" (click)="navOpen.set(false)"><app-icon [name]="route.icon"/>{{ route.label }}</a>
+      }
+    </nav>
+    <div class="sidebar-bottom"><div class="demo"><span></span> Demo workspace</div><div class="profile"><div class="avatar">AM</div><div><strong>Alex Morgan</strong><small>Operations manager</small></div></div></div>
+  </aside>
+  @if (navOpen()) { <button class="mobile-scrim" aria-label="Close menu" (click)="navOpen.set(false)"></button> }
+  <div class="main">
+    <header class="topbar">
+      <div class="breadcrumb"><button class="icon-button menu" aria-label="Toggle menu" aria-controls="sidebar" [attr.aria-expanded]="navOpen()" (click)="navOpen.set(!navOpen())"><app-icon name="menu"/></button><span>Workspace</span><span><app-icon name="right"/></span><strong>{{ currentLabel() }}</strong></div>
+      <div class="top-actions"><button class="search-button" (click)="openSearch()" aria-label="Search workspace"><app-icon name="search"/><span>Search workspace</span><kbd>Ctrl K</kbd></button><button class="icon-button bell" [class.has-alert]="lowStock().length" (click)="openModal('alerts')" aria-label="Inventory alerts"><app-icon name="bell"/></button><div class="header-avatar avatar" aria-label="Alex Morgan">AM</div></div>
+    </header>
+    <main>
+      @if (loading()) {
+        <section class="panel empty" role="status">Loading Fieldline…</section>
+      } @else if (loadError()) {
+        <section class="panel empty" role="alert"><p>{{ loadError() }}</p><button class="btn" (click)="refresh()">Retry</button></section>
+      } @else {
+        @switch (page()) {
+          @case ('overview') {
+            <div class="page-head"><div><div class="eyebrow">Operations workspace</div><h1>Operations overview</h1><p>Manage equipment sales, parts inventory, and deliveries.</p></div><button class="btn btn-dark" (click)="openNewOrder()"><app-icon name="plus"/> New order</button></div>
+            <section class="hero"><div class="hero-inner"><span class="hero-kicker"><app-icon name="sprout"/> Built for the field</span><h2>Keep your operation<br>moving.</h2><p>Find the right equipment, manage parts stock, and follow every order from the warehouse to the farm.</p><div class="hero-actions"><a class="btn btn-primary" href="#vehicles">Browse equipment <app-icon name="arrow"/></a><a class="btn btn-glass" href="#tracking">Track shipment <app-icon name="pin"/></a></div></div></section>
+            <div class="section-line"><h2>At a glance</h2><small><app-icon name="clock"/> Workspace totals</small></div>
+            <div class="metrics">@for (metric of metrics(); track metric.route) { <a class="metric" [href]="'#'+metric.route"><div class="metric-top"><span class="metric-icon"><app-icon [name]="metric.icon"/></span><span class="metric-link"><app-icon name="diagonal"/></span></div><div class="metric-value">{{ metric.value }}</div><div class="metric-label">{{ metric.label }}</div><div class="metric-note">{{ metric.note }}</div></a> }</div>
+            <div class="dashboard-grid">
+              <section class="panel"><div class="panel-head"><div><h2>Recent shipments</h2><p>Latest dispatches and delivery updates</p></div><a class="btn btn-quiet" href="#shipments">View all <app-icon name="arrow"/></a></div>
+                <div class="table-scroll"><table><thead><tr><th>Tracking ID</th><th>Customer</th><th>Status</th><th>Delivery date</th></tr></thead><tbody>@for (order of workspace().orders.slice(0,4); track order.id) { <tr><td><button class="id-link" type="button" (click)="openDetail(order)">{{ order.tracking }}</button></td><td>{{ order.customer }}</td><td><span class="badge" [class]="stageClasses[order.status]">{{ stages[order.status] }}</span></td><td>{{ deliveryDate(order) | date:'MMM d, y' }}</td></tr> }</tbody></table></div>
+              </section>
+              <section class="panel"><div class="panel-head"><div><h2>Stock alerts</h2><p>Items at or below their reorder point</p></div></div><ng-container [ngTemplateOutlet]="stockAlerts"/><div class="panel-footer"><a class="btn btn-quiet" href="#parts">Manage inventory <app-icon name="arrow"/></a></div></section>
+            </div>
+          }
+          @case ('vehicles') { <ng-container [ngTemplateOutlet]="inventoryPage"/> }
+          @case ('parts') { <ng-container [ngTemplateOutlet]="inventoryPage"/> }
+          @case ('orders') { <ng-container [ngTemplateOutlet]="ordersPage"/> }
+          @case ('shipments') { <ng-container [ngTemplateOutlet]="ordersPage"/> }
+          @case ('tracking') {
+            <div class="page-head"><div><div class="eyebrow">Logistics</div><h1>Track a shipment</h1><p>Look up the latest recorded progress for a shipment.</p></div></div>
+            <section class="panel tracking"><h2>Shipment lookup</h2>
+              <form class="track-form" (ngSubmit)="track()"><div class="field"><label for="tracking-id">Tracking or order ID</label><input id="tracking-id" name="tracking" [(ngModel)]="trackingInput" placeholder="e.g. FL-2084" required></div><button class="btn btn-dark" type="submit" [disabled]="lookupBusy()"><app-icon name="search"/> Track shipment</button></form>
+              <div class="track-result" aria-live="polite">
+                @if (lookupBusy()) { <div class="empty">Looking up shipment…</div> }
+                @else if (lookup(); as order) { <ng-container [ngTemplateOutlet]="shipmentDetail" [ngTemplateOutletContext]="{$implicit:order}"/> }
+                @else if (lookupError()) { <div class="empty">{{ lookupError() }}</div> }
+                @else { <small>Try sample shipment <button type="button" class="id-link" (click)="track('FL-2084')">FL-2084</button>.</small> }
+              </div>
+            </section>
+          }
+        }
+      }
+    </main>
+  </div>
+</div>
+
+<ng-template #stockAlerts><div class="alerts">@for (item of lowStock(); track item.id) { <div class="alert-row"><span class="product-icon"><app-icon [name]="item.type==='vehicle'?'tractor':'wrench'"/></span><div><strong>{{ item.name }}</strong><small>{{ item.id }}</small></div><span class="badge" [class]="stockClass(item)">{{ stockLabel(item) }}</span></div> } @empty { <div class="empty">All inventory is above its reorder point.</div> }</div></ng-template>
+
+<ng-template #inventoryPage>
+  @let isVehicle = page()==='vehicles';
+  <div class="page-head"><div><div class="eyebrow">Inventory</div><h1>{{ isVehicle?'Vehicle sales':'Parts distribution' }}</h1><p>{{ isVehicle?'Browse farm equipment and create customer orders.':'Check part availability, receive stock, and create distribution orders.' }}</p></div><button class="btn btn-dark" (click)="openNewItem(isVehicle?'vehicle':'part')"><app-icon name="plus"/> {{ isVehicle?'Add vehicle':'Add part' }}</button></div>
+  <section class="panel">
+    <div class="toolbar"><input type="search" aria-label="Search inventory" placeholder="Search name, category, or SKU" [ngModel]="query()" (ngModelChange)="query.set($event)"><select aria-label="Category filter" [ngModel]="filter()" (ngModelChange)="filter.set($event)"><option value="">All categories</option>@for (category of categories(); track category) { <option [value]="category">{{ category }}</option> }</select><small id="result-count" aria-live="polite">{{ visibleItems().length }} {{ visibleItems().length===1?'result':'results' }}</small></div>
+    @if (!visibleItems().length) { <div class="empty">No matches. Try a different search or filter.</div> }
+    @else if (isVehicle) {
+      <div class="cards">@for (item of visibleItems(); track item.id) { <article class="item-card"><div class="item-card-top"><span class="product-icon"><app-icon name="tractor"/></span><span class="badge" [class]="stockClass(item)">{{ stockLabel(item) }}</span></div><h3>{{ item.name }}</h3><p>{{ item.category }} · {{ item.id }}</p><div class="card-foot"><strong>{{ item.price | currency:'USD':'symbol':'1.0-2' }}</strong><span><button class="btn" (click)="openReceipt(item)"><app-icon name="plus"/> Receive stock</button> @if (item.stock) { <button class="btn btn-primary" (click)="openNewOrder(item.id)">Order</button> }</span></div></article> }</div>
+    } @else {
+      <div class="table-scroll"><table><thead><tr><th>Part</th><th>SKU</th><th>Unit price</th><th>Stock</th><th>Reorder at</th><th>Actions</th></tr></thead><tbody>
+        @for (item of visibleItems(); track item.id) { <tr><td><strong>{{ item.name }}</strong><small>{{ item.category }}</small></td><td>{{ item.id }}</td><td>{{ item.price | currency:'USD':'symbol':'1.0-2' }}</td><td><span class="badge" [class]="stockClass(item)">{{ stockLabel(item) }}</span></td><td>{{ item.reorder }}</td><td><button class="btn" (click)="openReceipt(item)"><app-icon name="plus"/> Receive stock</button> @if (item.stock) { <button class="btn btn-primary" (click)="openNewOrder(item.id)">Order</button> }</td></tr> }
+      </tbody></table></div>
+    }
+  </section>
+</ng-template>
+
+<ng-template #ordersPage>
+  @let isShipments = page()==='shipments';
+  <div class="page-head"><div><div class="eyebrow">{{ isShipments?'Logistics':'Sales' }}</div><h1>{{ isShipments?'Shipments':'Orders' }}</h1><p>{{ isShipments?'Review dispatches and record delivery updates.':'Review equipment and parts sales in one place.' }}</p></div>@if (isShipments) { <a class="btn btn-dark" href="#tracking"><app-icon name="pin"/> Track a shipment</a> } @else { <button class="btn btn-dark" (click)="openNewOrder()"><app-icon name="plus"/> New order</button> }</div>
+  <section class="panel">
+    <div class="toolbar"><input type="search" aria-label="Search orders and shipments" placeholder="Search ID, customer, or destination" [ngModel]="query()" (ngModelChange)="query.set($event)"><select aria-label="Status filter" [ngModel]="filter()" (ngModelChange)="filter.set($event)"><option value="">All statuses</option>@for (stage of stages; track stage) { <option>{{ stage }}</option> }</select><small aria-live="polite">{{ visibleOrders().length }} {{ visibleOrders().length===1?'result':'results' }}</small></div>
+    @if (!visibleOrders().length) { <div class="empty">No matches. Try a different search or filter.</div> }
+    @else {
+      <div class="table-scroll"><table><thead><tr><th>{{ isShipments?'Tracking ID':'Order ID' }}</th><th>Customer</th>@if (isShipments) { <th>Destination</th> } @else { <th>Item</th><th>Total</th> }<th>Status</th><th>{{ isShipments?'Delivery date':'Created' }}</th></tr></thead><tbody>
+        @for (order of visibleOrders(); track order.id) {
+          <tr><td><button class="id-link" (click)="openDetail(order)">{{ isShipments?order.tracking:order.id }}</button></td><td>{{ order.customer }}</td>@if (isShipments) { <td>{{ order.destination }}</td> } @else { <td>{{ itemName(order.itemId) }} × {{ order.quantity }}</td><td>{{ order.total | currency:'USD':'symbol':'1.0-2' }}</td> }<td><span class="badge" [class]="stageClasses[order.status]">{{ stages[order.status] }}</span></td><td>{{ (isShipments?deliveryDate(order):order.created) | date:'MMM d, y' }}</td></tr>
+        }
+      </tbody></table></div>
+    }
+  </section>
+</ng-template>
+
+<ng-template #shipmentDetail let-order>
+  <div class="detail-title"><h3>{{ order.tracking }}</h3><span class="badge" [class]="stageClasses[order.status]">{{ stages[order.status] }}</span></div>
+  <div class="shipment-meta"><div><small>Customer</small><strong>{{ order.customer }}</strong></div><div><small>Destination</small><strong>{{ order.destination }}</strong></div><div><small>Order</small><strong>{{ order.id }}</strong></div><div><small>{{ order.status===2?'Delivered':'Estimated delivery' }}</small><strong>{{ deliveryDate(order) | date:'MMM d, y' }}</strong></div></div>
+  <ol class="timeline">@for (event of newestEvents(order); track event.step) { <li><strong>{{ events[event.step] }}</strong><small>{{ event.date | date:'MMM d, y, h:mm a' }}</small></li> }</ol>
+</ng-template>
+
+<dialog aria-labelledby="dialog-title" (close)="onDialogClose()" (cancel)="busy() && $event.preventDefault()" (click)="dismissFromBackdrop($event)">
+  <div class="dialog-head">
+    <h2 id="dialog-title">@switch (modal()) { @case ('order-form') { New order } @case ('item-form') { Add {{ itemForm.type }} } @case ('receipt') { Receive stock } @case ('detail') { Order {{ selectedOrder()?.id }} } @case ('search') { Search workspace } @case ('alerts') { Stock alerts } }</h2>
+    <button class="icon-button" aria-label="Close dialog" type="button" [disabled]="busy()" (click)="closeModal()"><app-icon name="close"/></button>
+  </div>
+  <div class="dialog-body">
+    @switch (modal()) {
+      @case ('order-form') {
+        @if (!available().length) { <div class="empty">Receive inventory before creating an order.</div> } @else {
+          <p>Record a customer sale, reserve inventory, and create a tracking ID.</p>
+          <form #form="ngForm" (ngSubmit)="form.valid && createOrder()">
+            <div class="form-grid">
+              <div class="field full"><label for="customer">Customer or business</label><input id="customer" name="customer" [(ngModel)]="orderForm.customer" maxlength="80" placeholder="Green Valley Farms" required></div>
+              <div class="field full"><label for="item-id">Equipment or part</label><select id="item-id" name="itemId" [(ngModel)]="orderForm.itemId" required>@for (item of available(); track item.id) { <option [value]="item.id">{{ item.name }} · {{ item.stock }} available</option> }</select></div>
+              <div class="field"><label for="order-qty">Quantity</label><input id="order-qty" name="quantity" type="number" min="1" [max]="item(orderForm.itemId)?.stock ?? 0" step="1" [(ngModel)]="orderForm.quantity" required></div>
+              <div class="field"><label for="eta">Estimated delivery</label><input id="eta" name="eta" type="date" [(ngModel)]="orderForm.eta" required></div>
+              <div class="field full"><label for="destination">Destination</label><input id="destination" name="destination" maxlength="100" [(ngModel)]="orderForm.destination" placeholder="City, State" required></div>
+            </div>
+            <p id="order-total" class="order-total">Order total {{ ((orderForm.quantity ?? 0)*(item(orderForm.itemId)?.price ?? 0)) | currency:'USD':'symbol':'1.0-2' }}</p>
+            @if (error()) { <p class="error" role="alert">{{ error() }}</p> }<div class="form-actions"><button class="btn" type="button" [disabled]="busy()" (click)="closeModal()">Cancel</button><button class="btn btn-primary" type="submit" [disabled]="busy() || !form.valid">{{ busy()?'Saving…':'Create order' }}</button></div>
+          </form>
+        }
+      }
+      @case ('item-form') {
+        <form #form="ngForm" (ngSubmit)="form.valid && addItem()">
+          <div class="form-grid">
+            <div class="field full"><label for="item-name">Name</label><input id="item-name" name="name" maxlength="80" [(ngModel)]="itemForm.name" required></div>
+            <div class="field"><label for="sku">SKU</label><input id="sku" name="id" maxlength="32" pattern="[A-Za-z0-9][A-Za-z0-9_-]{0,31}" [(ngModel)]="itemForm.id" required></div>
+            <div class="field"><label for="category">Category</label><input id="category" name="category" maxlength="50" [(ngModel)]="itemForm.category" required></div>
+            <div class="field"><label for="price">Unit price (USD)</label><input id="price" name="price" type="number" min="0" max="100000000" step="0.01" [(ngModel)]="itemForm.price" required></div>
+            <div class="field"><label for="stock">Starting stock</label><input id="stock" name="stock" type="number" min="0" max="1000000" step="1" [(ngModel)]="itemForm.stock" required></div>
+            <div class="field"><label for="reorder">Reorder point</label><input id="reorder" name="reorder" type="number" min="0" max="1000000" step="1" [(ngModel)]="itemForm.reorder" required></div>
+          </div>
+          @if (error()) { <p class="error" role="alert">{{ error() }}</p> }<div class="form-actions"><button class="btn" type="button" [disabled]="busy()" (click)="closeModal()">Cancel</button><button class="btn btn-primary" type="submit" [disabled]="busy() || !form.valid">{{ busy()?'Saving…':'Add '+itemForm.type }}</button></div>
+        </form>
+      }
+      @case ('receipt') {
+        @if (selectedItem(); as item) { <p>{{ item.name }} · {{ item.id }} · {{ item.stock }} units on hand</p> }
+        <form #form="ngForm" (ngSubmit)="form.valid && receive()"><div class="field"><label for="receipt-qty">Units received</label><input id="receipt-qty" name="quantity" type="number" min="1" max="1000000" step="1" [(ngModel)]="receiptQty" required></div>@if (error()) { <p class="error" role="alert">{{ error() }}</p> }<div class="form-actions"><button class="btn" type="button" [disabled]="busy()" (click)="closeModal()">Cancel</button><button class="btn btn-primary" type="submit" [disabled]="busy() || !form.valid">{{ busy()?'Saving…':'Update stock' }}</button></div></form>
+      }
+      @case ('detail') {
+        @if (selectedOrder(); as order) {
+          <p>{{ itemName(order.itemId) }} × {{ order.quantity }} · {{ order.total | currency:'USD':'symbol':'1.0-2' }}</p>
+          <ng-container [ngTemplateOutlet]="shipmentDetail" [ngTemplateOutletContext]="{$implicit:order}"/>
+          @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+          <div class="form-actions"><button class="btn" (click)="openTracking(order.tracking)" [disabled]="busy()">Open tracking</button>@if (order.status<2) { <button class="btn btn-primary" (click)="advance()" [disabled]="busy()">{{ order.status===0?'Mark in transit':'Mark delivered' }}</button> }</div>
+        }
+      }
+      @case ('search') {
+        <label class="field" for="workspace-query">Find equipment, parts, orders, or shipments</label><input type="search" id="workspace-query" placeholder="Enter a name, SKU, or tracking ID" [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)">
+        @if (searchQuery().trim()) { <div class="search-results">@for (result of searchResults(); track result.type+result.id) { <button class="result" (click)="chooseSearch(result)"><strong>{{ result.title }}</strong><small>{{ result.subtitle }}</small></button> } @empty { <div class="empty">No matching records.</div> }</div> }
+      }
+      @case ('alerts') {
+        <ng-container [ngTemplateOutlet]="stockAlerts"/><div class="form-actions"><a class="btn btn-primary" href="#parts" (click)="closeModal()">Manage parts inventory <app-icon name="arrow"/></a></div>
+      }
+    }
+  </div>
+</dialog>
+@if (toast()) { <div class="toast" role="status">{{ toast() }}</div> }
