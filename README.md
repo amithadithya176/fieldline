@@ -1,5 +1,13 @@
 # Fieldline Equipment Operations
 
+**Open-source agricultural equipment inventory, sales, and shipment tracking demo**, built with Angular 21 and ASP.NET Core 10.
+
+Fieldline brings vehicle and parts inventory, stock alerts, orders, and manually updated shipment tracking into one example application. It is an early-stage demo intended for learning and experimentation, not a production-ready commerce system.
+
+**Live demo:** https://fieldline-ovtn.onrender.com/  
+**Contributing:** See [CONTRIBUTING.md](CONTRIBUTING.md) for how to get involved.  
+**License:** [MIT](LICENSE).
+
 Fieldline is an Angular 21 and C# ASP.NET Core 10 demo for agricultural vehicle
 sales, parts distribution, and shipment tracking. It starts with sample
 equipment and orders. Try tracking ID **FL-2084** for a sample shipment.
